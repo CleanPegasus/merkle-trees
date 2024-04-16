@@ -95,11 +95,32 @@ impl MerkleTree {
         }
     }
 
+    fn contains(&self, data: &Vec<u8>) -> bool {
+        let data_hash = Self::sha256_hasher(&[data]);
+        self.contains_hash(&self.root, &data_hash)
+        
+    }
+
+    fn contains_hash(&self, node: &Option<Box<MerkleNode>>, data_hash: &Vec<u8>) -> bool {
+        match node {
+            None => false,
+            Some(n) => {
+                if &n.hash == data_hash {
+                    return true;
+                } else {
+                    let in_left_node = self.contains_hash(&n.left, &data_hash);
+                    let in_right_node = self.contains_hash(&n.right, &data_hash);
+                    return in_left_node || in_right_node
+                }
+            }
+        }
+    }
+
     fn sha256_hasher(datas: &[&Vec<u8>]) -> Vec<u8> {
         let mut hasher = Sha256::new();
-        let _ = datas.into_iter().map(|d| {
-            hasher.input(d);
-        });
+        for data in datas.into_iter() {
+            hasher.input(data)
+        }
         hasher.result_str().as_bytes().to_vec()
     }
 
@@ -124,5 +145,7 @@ fn main() {
     // dbg!(&merkle_tree.root.unwrap().right);
     let new_data = "tree".as_bytes().to_vec();
     merkle_tree.insert(&new_data);
-    dbg!(&merkle_tree);
+    
+    let is_present = merkle_tree.contains(&"hello".as_bytes().to_vec());
+    dbg!(is_present);
 }
